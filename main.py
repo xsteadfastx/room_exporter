@@ -26,7 +26,7 @@ def do_connect():
 
 def get_data():
     SENSOR.measure()
-    return "temperature {}".format(SENSOR.temperature())
+    return "temperature {}\nhumidity {}".format(SENSOR.temperature(), SENSOR.humidity())
 
 
 # connect to wifi
@@ -43,20 +43,29 @@ while True:
     cl, addr = s.accept()
     print("client connected from", addr)
     cl_file = cl.makefile("rwb", 0)
+
     while True:
         line = cl_file.readline()
         if not line or line == b"\r\n":
             break
+
+    # try to get temp data
+    status_code = "200"
     response = None
-    while not response:
+    resp_counter = 0
+    while not response and resp_counter <= 5:
         try:
             response = get_data()
             print(response)
         except BaseException as e:
-            print(e)
+            print("got error trying to fetch data: {}".format(e))
+            resp_counter += 1
+            print("resp_counter: {}".format(resp_counter))
     if not response:
-        response = "nothing"
+        response = ""
+        status_code = "500"
 
+    # create headers
     response_headers = {
         "Content-Type": "text/html; encoding=utf8",
         "Content-Length": len(response),
@@ -68,8 +77,8 @@ while True:
     )
 
     response_proto = "HTTP/1.1"
-    response_status = "200"
-    response_status_text = "OK"  # this can be random
+    response_status = status_code
+    response_status_text = "FOO"  # this can be random
 
     cl.send("%s %s %s" % (response_proto, response_status, response_status_text))
     cl.send(response_headers_raw)
@@ -77,4 +86,3 @@ while True:
     cl.send(response)
 
     cl.close()
-    time.sleep(0.1)
