@@ -1,7 +1,7 @@
-.PHONY: screen put
+.PHONY: shell put
 
-screen:
-	picocom /dev/ttyUSB0 -b115200
+shell:
+	mpfshell ttyUSB0
 
 put:
 	ampy -p /dev/ttyUSB0 put main.py
